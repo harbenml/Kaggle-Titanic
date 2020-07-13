@@ -4,8 +4,10 @@ from sklearn import metrics
 from sklearn import preprocessing
 from sklearn.ensemble import RandomForestClassifier
 from typing import List
+import config
 
-SEED = 23
+SEED = config.SEED
+MODEL = "RF"
 
 
 def run(fold: int) -> None:
@@ -14,7 +16,7 @@ def run(fold: int) -> None:
 
     features, num_cols = get_features(df)
     df = fill_na_with_none(df, features, num_cols)
-    df = label_encode_features(df, features, num_cols)
+    df, label_encoders = label_encode_features(df, features, num_cols)
     df_train, df_val = get_train_val_set(df, fold)
     X_train, y_train = df_train[features].values, df_train["Survived"].values
     X_val, y_val = df_val[features].values, df_val["Survived"].values
@@ -35,18 +37,9 @@ def run(fold: int) -> None:
     auc = metrics.roc_auc_score(y_val, val_preds)
     print(f"Fold = {fold}, AUC = {auc}")
 
-    # train_performance = accuracy_score(y, clf.predict(X))
-    # print(f"Accuracy on training data: {train_performance :.5f}")
-
-    # # cross validation
-    # cv = StratifiedKFold(n_splits=10)
-    # scores = cross_val_score(clf, X, y, cv=cv, n_jobs=-1)
-    # score_means.append(scores.mean())
-    # print(
-    #     f"Cross validation accuracy of {MODEL}: {scores.mean() :.5f} (+/- {scores.std()*2 :.5f})"
-    # )
-
-    # print(features)
+    joblib.dump(label_encoders, f"models/{MODEL}_{fold}_label_encoder.pkl")
+    joblib.dump(model, f"models/{MODEL}_{fold}.pkl")
+    joblib.dump(df_train.columns, f"models/{MODEL}_{fold}_columns.pkl")
 
 
 def get_features(df: pd.DataFrame) -> (List[str], List[str]):
@@ -74,13 +67,14 @@ def label_encode_features(
     df: pd.DataFrame, features: List[str], num_cols: List[str]
 ) -> pd.DataFrame:
     """For all categorical features, encode the categories to numerical values"""
+    label_encoders = {}
     for col in features:
         if col not in num_cols:
             lbl = preprocessing.LabelEncoder()
             lbl.fit(df[col])
             df.loc[:, col] = lbl.transform(df[col])
-
-    return df
+            label_encoders[col] = lbl
+    return df, label_encoders
 
 
 def get_train_val_set(df: pd.DataFrame, fold: int) -> (pd.DataFrame, pd.DataFrame):
