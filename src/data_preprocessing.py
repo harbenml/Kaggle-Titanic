@@ -3,15 +3,18 @@
 The following procedure is applied:
 1. Load the raw data.
 2. Clean data by imputing missing values.
-3. Transform existing features.
-4. Create new features.
+3. Create new features.
+4. Encode features.
 5. Export processed data and enocders.
 
 """
 import pandas as pd
+from sklearn import preprocessing
 from typing import List, Tuple
 
-# This dictionary is taken from https://medium.com/datadriveninvestor/start-with-kaggle-a-comprehensive-guide-to-solve-the-titanic-challenge-8ac5815b0473
+
+# This dictionary is taken from
+# https://medium.com/datadriveninvestor/start-with-kaggle-a-comprehensive-guide-to-solve-the-titanic-challenge-8ac5815b0473
 Title_Dictionary = {
     "Capt": "Officer",
     "Col": "Officer",
@@ -45,13 +48,25 @@ class DataPreprocessing:
         self.target_col = str
 
     def run_preprocessing(self):
+
+        # load data
         self.get_data()
         self.target_col = "Survived"
         self.full_data = self.combine_train_test_set(
             self.train, self.test, self.target_col
         )
+
+        # data cleaning and feature engineering
         self.create_new_features()
         self.clean_data()
+
+        # label encoding of categorical features
+        features, num_cols = self.get_features(self.full_data)
+        self.full_data, _ = self.label_encode_features(
+            self.full_data, features, num_cols
+        )
+
+        # split and export data
         self.train, self.test = self.split_train_test_set(
             self.full_data, self.target_col
         )
@@ -68,8 +83,8 @@ class DataPreprocessing:
             print("Test data loaded.")
 
     def export_data(self):
-        self.train.to_csv("data/processed/train_new.csv", index=False)
-        self.test.to_csv("data/processed/test_new.csv", index=False)
+        self.train.to_csv("data/processed/train.csv", index=False)
+        self.test.to_csv("data/processed/test.csv", index=False)
 
     def create_new_features(self):
         # title and surname
@@ -79,20 +94,10 @@ class DataPreprocessing:
         pass
 
     def clean_data(self):
-        # self.clean_missing_title()
         self.clean_missing_fare()
         self.clean_missing_age()
         self.clean_missing_embark()
         self.clean_missing_cabin()
-
-    def impute_missing_values(self):
-        """Impute missing value with dummy value.
-
-        This is a general method that can be used to simply impute NaN values
-        with dummy values. The reason behind it is that new data for model
-        prediction has to be preprocessed in order to use the model.
-        """
-        pass
 
     @staticmethod
     def combine_train_test_set(
@@ -110,6 +115,7 @@ class DataPreprocessing:
         """Split full_data into training and test data"""
         train = data[data[target_col] != -1].reset_index(drop=True)
         test = data[data[target_col] == -1].reset_index(drop=True)
+        test = test.drop(target_col, axis=1)
         return train, test
 
     def get_titles_and_surnames(self):
@@ -158,6 +164,41 @@ class DataPreprocessing:
             lambda x: x[0]
         )
         self.full_data["Cabin"] = self.full_data["Cabin"].fillna("NONE").astype(str)
+
+    @staticmethod
+    def get_features(df: pd.DataFrame) -> (List[str], List[str]):
+        # list of numerical columns
+        num_cols = ["Age", "Fare", "Parch", "SibSp", "Family_Size"]
+        # exclude the targets and PassengerId
+        excluded_cols = ["Survived", "PassengerId"]
+        # define features
+        features = [f for f in df.columns if f not in excluded_cols]
+
+        return features, num_cols
+
+    @staticmethod
+    def label_encode_features(
+        df: pd.DataFrame, features: List[str], num_cols: List[str]
+    ) -> pd.DataFrame:
+        """For all categorical features, encode the categories to numerical values"""
+        label_encoders = {}
+        for col in features:
+            if col not in num_cols:
+                lbl = preprocessing.LabelEncoder()
+                lbl.fit(df[col].values.tolist())
+                df.loc[:, col] = lbl.transform(df[col].values.tolist())
+                label_encoders[col] = lbl
+        return df, label_encoders
+
+    @staticmethod
+    def fill_na_with_none(
+        df: pd.DataFrame, features: List[str], num_cols: List[str]
+    ) -> pd.DataFrame:
+        """For each column, replace NaN values with NONE"""
+        for col in features:
+            if col not in num_cols:
+                df.loc[:, col] = df[col].astype(str).fillna("NONE")
+        return df
 
 
 if __name__ == "__main__":
