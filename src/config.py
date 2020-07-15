@@ -4,3 +4,4 @@ MODEL_PATH = "models/"
 
 NUM_FOLDS = 5
 SEED = 23
+
