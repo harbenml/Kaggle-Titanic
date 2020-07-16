@@ -1,5 +1,6 @@
 import pandas as pd
 from sklearn import model_selection
+from config import NUM_FOLDS
 
 if __name__ == "__main__":
 
@@ -16,7 +17,7 @@ if __name__ == "__main__":
     y = df["Survived"].values
 
     # do stratified kfold in order to have equally distributed folds
-    kf = model_selection.StratifiedKFold(n_splits=10)
+    kf = model_selection.StratifiedKFold(n_splits=NUM_FOLDS)
 
     # get values for the kfolds
     for fold, (train_idx, val_idx) in enumerate(kf.split(df, y)):

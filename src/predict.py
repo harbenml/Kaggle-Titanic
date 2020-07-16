@@ -5,21 +5,24 @@ from sklearn import preprocessing
 from sklearn import metrics
 import joblib
 import numpy as np
-import config
+from config import (
+    TEST_DATA_PATH,
+    MODEL_PATH,
+    NUM_FOLDS,
+    FEATURE_COLS,
+    TARGET_COL,
+    SEED,
+)
 
 
-def predict(test_data_path, model_type, model_path):
-    df = pd.read_csv(test_data_path)
+def predict(model_type):
+    df = pd.read_csv(TEST_DATA_PATH)
     test_idx = df["PassengerId"]
     predictions = None
 
-    for FOLD in range(10):
-        df = pd.read_csv(test_data_path)
-
-        cols = joblib.load(os.path.join(model_path, f"{model_type}_{FOLD}_columns.pkl"))
-        df = df[cols]
-
-        clf = joblib.load(os.path.join(model_path, f"{model_type}_{FOLD}.pkl"))
+    for FOLD in range(NUM_FOLDS):
+        df = df[FEATURE_COLS]
+        clf = joblib.load(os.path.join(MODEL_PATH, f"{model_type}_{FOLD}.pkl"))
         preds = clf.predict_proba(df)[:, 1]
 
         if FOLD == 0:
@@ -27,7 +30,7 @@ def predict(test_data_path, model_type, model_path):
         else:
             predictions += preds
 
-    predictions /= 10
+    predictions /= NUM_FOLDS
 
     sub = pd.DataFrame(
         np.column_stack((test_idx, predictions)), columns=["PassengerId", "Survived"]
@@ -39,8 +42,5 @@ def predict(test_data_path, model_type, model_path):
 
 
 if __name__ == "__main__":
-    submission = predict(
-        test_data_path=config.TEST_DATA, model_type="RF", model_path=config.MODEL_PATH,
-    )
-
-    submission.to_csv(f"{config.MODEL_PATH}rf_submission.csv", index=False)
+    submission = predict(model_type="RF")
+    submission.to_csv(f"{MODEL_PATH}rf_submission.csv", index=False)

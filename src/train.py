@@ -4,27 +4,29 @@ from sklearn import metrics
 from sklearn import preprocessing
 from sklearn.ensemble import RandomForestClassifier
 from typing import List
-import config
+from config import (
+    TRAIN_DATA_PATH,
+    MODEL_PATH,
+    NUM_FOLDS,
+    FEATURE_COLS,
+    TARGET_COL,
+    SEED,
+)
 
-SEED = config.SEED
 MODEL = "RF"
 
 
 def run(fold: int) -> None:
 
     # read file
-    df = pd.read_csv("data/processed/train_folds.csv")
+    df = pd.read_csv(TRAIN_DATA_PATH)
 
     # split train and val set
     df_train, df_val = get_train_val_set(df, fold)
 
-    # get features
-    excluded_cols = ["Survived", "PassengerId", "kfold"]
-    features = [f for f in df.columns if f not in excluded_cols]
-
     # get data for modeling
-    X_train, y_train = df_train[features].values, df_train["Survived"].values
-    X_val, y_val = df_val[features].values, df_val["Survived"].values
+    X_train, y_train = df_train[FEATURE_COLS].values, df_train[TARGET_COL].values
+    X_val, y_val = df_val[FEATURE_COLS].values, df_val[TARGET_COL].values
 
     model = RandomForestClassifier(
         n_jobs=-1,
@@ -44,7 +46,6 @@ def run(fold: int) -> None:
     print(f"Fold = {fold}, AUC = {auc}")
 
     joblib.dump(model, f"models/{MODEL}_{fold}.pkl")
-    joblib.dump(features, f"models/{MODEL}_{fold}_columns.pkl")
 
 
 def get_train_val_set(df: pd.DataFrame, fold: int) -> (pd.DataFrame, pd.DataFrame):
@@ -55,5 +56,5 @@ def get_train_val_set(df: pd.DataFrame, fold: int) -> (pd.DataFrame, pd.DataFram
 
 
 if __name__ == "__main__":
-    for fold in range(10):
+    for fold in range(NUM_FOLDS):
         run(fold)
