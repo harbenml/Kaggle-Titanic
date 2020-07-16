@@ -5,7 +5,7 @@ from sklearn import preprocessing
 from sklearn import metrics
 import joblib
 import numpy as np
-from config import (
+from .config import (
     TEST_DATA_PATH,
     MODEL_PATH,
     NUM_FOLDS,

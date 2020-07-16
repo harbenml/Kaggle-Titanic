@@ -1,6 +1,6 @@
 import pandas as pd
 from sklearn import model_selection
-from config import NUM_FOLDS
+from .config import NUM_FOLDS
 
 if __name__ == "__main__":
 

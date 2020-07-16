@@ -4,6 +4,7 @@ from sklearn import metrics
 from sklearn import preprocessing
 from sklearn.ensemble import RandomForestClassifier
 from typing import List
+from dispatcher import MODELS
 from config import (
     TRAIN_DATA_PATH,
     MODEL_PATH,
@@ -12,8 +13,6 @@ from config import (
     TARGET_COL,
     SEED,
 )
-
-MODEL = "RF"
 
 
 def run(fold: int) -> None:
@@ -28,22 +27,14 @@ def run(fold: int) -> None:
     X_train, y_train = df_train[FEATURE_COLS].values, df_train[TARGET_COL].values
     X_val, y_val = df_val[FEATURE_COLS].values, df_val[TARGET_COL].values
 
-    model = RandomForestClassifier(
-        n_jobs=-1,
-        n_estimators=200,
-        max_features="auto",
-        min_samples_leaf=15,
-        min_samples_split=10,
-        oob_score=True,
-        random_state=SEED,
-    )
+    model = MODELS[MODEL]
 
     # training
-    model.fit(X_train, y_train)
+    model.train(X_train, y_train)
 
     val_preds = model.predict_proba(X_val)[:, 1]
     auc = metrics.roc_auc_score(y_val, val_preds)
-    print(f"Fold = {fold}, AUC = {auc}")
+    print(f"{MODEL}, Fold = {fold}, AUC = {auc}")
 
     joblib.dump(model, f"models/{MODEL}_{fold}.pkl")
 
@@ -56,5 +47,6 @@ def get_train_val_set(df: pd.DataFrame, fold: int) -> (pd.DataFrame, pd.DataFram
 
 
 if __name__ == "__main__":
-    for fold in range(NUM_FOLDS):
-        run(fold)
+    for MODEL in MODELS:
+        for fold in range(NUM_FOLDS):
+            run(fold)

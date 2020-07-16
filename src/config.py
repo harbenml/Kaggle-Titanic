@@ -3,6 +3,7 @@ TEST_DATA_PATH = "data/processed/test.csv"
 MODEL_PATH = "models/"
 NUM_FOLDS = 5
 SEED = 23
+VERBOSE = 0
 FEATURE_COLS = [
     "Pclass",
     "Sex",
