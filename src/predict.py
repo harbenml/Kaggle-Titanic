@@ -5,7 +5,8 @@ from sklearn import preprocessing
 from sklearn import metrics
 import joblib
 import numpy as np
-from .config import (
+from dispatcher import MODELS
+from config import (
     TEST_DATA_PATH,
     MODEL_PATH,
     NUM_FOLDS,
@@ -32,6 +33,8 @@ def predict(model_type):
 
     predictions /= NUM_FOLDS
 
+    joblib.dump(predictions, f"models/{MODEL}_predictions.pkl")
+
     sub = pd.DataFrame(
         np.column_stack((test_idx, predictions)), columns=["PassengerId", "Survived"]
     )
@@ -42,5 +45,7 @@ def predict(model_type):
 
 
 if __name__ == "__main__":
-    submission = predict(model_type="RF")
-    submission.to_csv(f"{MODEL_PATH}rf_submission.csv", index=False)
+    for MODEL in MODELS:
+        print(MODEL)
+        submission = predict(model_type=MODEL)
+        submission.to_csv(f"{MODEL_PATH}{MODEL}_submission.csv", index=False)
